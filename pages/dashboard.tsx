@@ -134,12 +134,16 @@ useEffect(() => {
   // --- Sankey layout fixed size for positions
   const layoutWidth = 600
   const layoutHeight = 400
-  const margin = { top: 20, right: 140, bottom: 20, left: 20 } // extra right for labels
+  const margin = { top: 20, right: 140, bottom: 20, left: 20 }
 
   const grossIncome = 29000
-  const netIncome = 23700
+  const tax = 5300
+  const uif = 177
+  const pension = 582
 
-  // Group transactions
+  const netIncome = grossIncome - tax - uif - pension
+
+  // Group transactions by category
   const categorySums: Record<string, number> = {}
   transactions.forEach(t => {
     categorySums[t.category] = (categorySums[t.category] || 0) + t.amount
@@ -148,17 +152,25 @@ useEffect(() => {
   const spentTotal = Object.values(categorySums).reduce((a, b) => a + b, 0)
   const remaining = Math.max(netIncome - spentTotal, 0)
 
+  // --- Nodes
   const nodes = [
-    { name: `Gross [${grossIncome}]` },
-    { name: `Net [${netIncome}]` },
-    ...categories.map(c => ({ name: `${c} [${categorySums[c]}]` })),
-    { name: `Remaining [${remaining}]` }
+    { name: `Gross [${grossIncome}]` },             // 0
+    { name: `Tax [${tax}]` },                       // 1
+    { name: `UIF [${uif}]` },                       // 2
+    { name: `Pension [${pension}]` },              // 3
+    { name: `Net [${netIncome}]` },                // 4
+    ...categories.map(c => ({ name: `${c} [${categorySums[c]}]` })), // 5..n
+    { name: `Remaining [${remaining}]` }           // last
   ]
 
+  // --- Links
   const links = [
-    { source: 0, target: 1, value: netIncome },
-    ...categories.map((c, i) => ({ source: 1, target: i + 2, value: categorySums[c] })),
-    { source: 1, target: nodes.length - 1, value: remaining }
+    { source: 0, target: 1, value: tax },            // Gross -> Tax
+    { source: 0, target: 2, value: uif },            // Gross -> UIF
+    { source: 0, target: 3, value: pension },        // Gross -> Pension
+    { source: 0, target: 4, value: netIncome },      // Gross -> Net
+    ...categories.map((c, i) => ({ source: 4, target: i + 5, value: categorySums[c] })), // Net -> categories
+    { source: 4, target: nodes.length - 1, value: remaining } // Net -> Remaining
   ]
 
   interface SankeyNode { name: string; x0?: number; x1?: number; y0?: number; y1?: number }
@@ -176,10 +188,7 @@ useEffect(() => {
 
   // --- Responsive SVG
   svg
-    .attr(
-      'viewBox',
-      `0 0 ${layoutWidth + margin.left + margin.right} ${layoutHeight + margin.top + margin.bottom}`
-    )
+    .attr('viewBox', `0 0 ${layoutWidth + margin.left + margin.right} ${layoutHeight + margin.top + margin.bottom}`)
     .attr('preserveAspectRatio', 'xMidYMid meet')
     .style('width', '100%')
     .style('height', 'auto')
@@ -192,7 +201,13 @@ useEffect(() => {
     .data(sankeyLinks)
     .join('path')
     .attr('d', sankeyLinkHorizontal())
-    .attr('stroke', '#4f46e5')
+    .attr('stroke', d => {
+      const name = sankeyNodes[d.target.index].name
+      if (name.startsWith('Tax')) return '#ef4444'
+      if (name.startsWith('UIF')) return '#fbbf24'
+      if (name.startsWith('Pension')) return '#f97316'
+      return '#4f46e5'
+    })
     .attr('stroke-width', d => Math.max(1, d.width || 1))
     .attr('fill', 'none')
     .attr('opacity', 0.5)
@@ -210,6 +225,9 @@ useEffect(() => {
       if (d.name.startsWith('Gross')) return '#f59e0b'
       if (d.name.startsWith('Net')) return '#6366f1'
       if (d.name.startsWith('Remaining')) return '#22c55e'
+      if (d.name.startsWith('Tax')) return '#ef4444'
+      if (d.name.startsWith('UIF')) return '#fbbf24'
+      if (d.name.startsWith('Pension')) return '#f97316'
       return '#2563eb'
     })
 
@@ -224,6 +242,7 @@ useEffect(() => {
     .text(d => d.name)
     .attr('fill', '#000')
     .style('font-size', '12px')
+
 }, [transactions])
 
     return (
