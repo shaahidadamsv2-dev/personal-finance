@@ -248,8 +248,36 @@ g.append('g')
 
 }, [transactions])
 
+// --- Investment balance from start of month
+const [investmentBalance, setInvestmentBalance] = useState(45000) // starting balance
+const investmentRate = 0.065 // 6.5% annual interest
+const initialInvestment = 45000
+
+useEffect(() => {
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0) // midnight at the start of the month
+
+  const secondsInYear = 365 * 24 * 60 * 60
+
+  const updateBalance = () => {
+    const now = new Date()
+    const elapsedSeconds = (now.getTime() - startOfMonth.getTime()) / 1000
+    const newBalance = initialInvestment * Math.pow(1 + investmentRate, elapsedSeconds / secondsInYear)
+    setInvestmentBalance(newBalance)
+  }
+
+  // Initial update
+  updateBalance()
+
+  const interval = setInterval(updateBalance, 200) // update every second
+
+  return () => clearInterval(interval)
+}, [])
+
     return (
       <div className="min-h-screen bg-gray-100 p-4">
+
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Dashboard</h1>
@@ -349,6 +377,14 @@ g.append('g')
               </ul>
             )}
           </div>
+
+        <div className="bg-white p-4 rounded shadow mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Investment Balance</h2>
+          <p className="text-2xl font-bold text-green-600">
+            ${investmentBalance.toFixed(10)}
+          </p>
+          <p className="text-gray-500 text-sm">Updated live with 6.5% annual interest</p>
+        </div>
 
               {/* Sankey Chart */}
           <div className="bg-white p-6 rounded shadow mb-6">
