@@ -5,9 +5,10 @@ import BottomNav from '@/components/bottom-nav'
 interface Props {
 	title?: string
 	children: React.ReactNode
+	user?: any
 }
 
-const Page = ({ title, children }: Props) => (
+const Page = ({ title, children, user}: Props) => (
 	<>
 		{title ? (
 			<Head>
@@ -15,7 +16,7 @@ const Page = ({ title, children }: Props) => (
 			</Head>
 		) : null}
 
-		<Appbar />
+		<Appbar user={user} />
 
 		<main
 			/**

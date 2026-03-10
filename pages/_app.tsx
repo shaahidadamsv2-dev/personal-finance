@@ -2,14 +2,26 @@ import type { AppProps } from 'next/app'
 import { ThemeProvider } from 'next-themes'
 import '@/styles/globals.css'
 
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabaseClient'
 export default function App({ Component, pageProps }: AppProps) {
+ const [user, setUser] = useState<any>(null)
+	
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user)
+    }
+    fetchUser()
+  }, [])
+	
 	return (
 		<ThemeProvider
 			attribute='class'
 			defaultTheme='system'
 			disableTransitionOnChange
 		>
-			<Component {...pageProps} />
+			<Component {...pageProps} user={user} setUser={setUser}  />
 		</ThemeProvider>
 	)
 }
