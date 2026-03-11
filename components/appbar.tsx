@@ -42,7 +42,7 @@ const Appbar = ({ user, setUser, selectedAccount, setSelectedAccount }: AppbarPr
     }
 
     fetchSharedAccounts()
-  }, [user, setUser, setSelectedAccount])
+  }, [])
 
   return (
     <div className='fixed top-0 left-0 z-20 w-full bg-zinc-900 pt-safe'>

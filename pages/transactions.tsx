@@ -51,7 +51,7 @@ const Transactions = ({ user, setUser, selectedAccount, setSelectedAccount }: Tr
             }
         }
         getUser()
-    }, [fetchTransactions, router, setUser])
+    }, [])
 
     useEffect(() => {
         console.log("selectedAccount:", selectedAccount)
