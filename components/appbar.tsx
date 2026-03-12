@@ -28,7 +28,7 @@ const Appbar = ({ user, setUser, selectedAccount, setSelectedAccount, sharedAcco
         <div className='mx-auto flex h-20 max-w-screen-md items-center justify-between px-6'>
 
           <Link href='/'>
-            <h1 className='font-medium'>Welcome {user?.email}</h1>
+            <h1 className='font-medium'>Welcome {user?.displayName}</h1>
           </Link>
 
           <nav className='flex items-center space-x-6'>

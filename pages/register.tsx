@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useRouter } from 'next/router'
@@ -5,18 +7,34 @@ import { useRouter } from 'next/router'
 export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const router = useRouter()
 
   const handleRegister = async () => {
-    const { error } = await supabase.auth.signUp({
+    // 1️⃣ Sign up the user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      password,
+      password
     })
 
-    if (error) {
-      alert(error.message)
-    } else {
-      router.push('/dashboard')
+    if (authError) {
+      alert(authError.message)
+      return
+    }
+
+    if (authData?.user) {
+      const userId = authData.user.id
+
+      // 2️⃣ Insert display name into profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{ id: userId, email, display_name: displayName }])
+
+      if (profileError) {
+        alert('Failed to save display name: ' + profileError.message)
+      } else {
+        router.push('/dashboard')
+      }
     }
   }
 
@@ -28,6 +46,7 @@ export default function Register() {
         type="email"
         placeholder="Email"
         className="border p-2"
+        value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
 
@@ -35,7 +54,16 @@ export default function Register() {
         type="password"
         placeholder="Password"
         className="border p-2"
+        value={password}
         onChange={(e) => setPassword(e.target.value)}
+      />
+
+      <input
+        type="text"
+        placeholder="Display Name"
+        className="border p-2"
+        value={displayName}
+        onChange={(e) => setDisplayName(e.target.value)}
       />
 
       <button
