@@ -13,7 +13,7 @@ interface CategoryTotal {
 }
 
 interface DashboardProps {
-  user: any // you can type this properly later
+  user: any
   setUser: (user: any) => void
   selectedAccount?: string | null
   setSelectedAccount: (account: string | null) => void
@@ -21,11 +21,10 @@ interface DashboardProps {
 
 export default function Dashboard({ user, setUser, selectedAccount, setSelectedAccount }: DashboardProps) {
   const [categoryTotals, setCategoryTotals] = useState<CategoryTotal[]>([])
-  const [payday, setPayday] = useState(25) // default pay date
+  const [payday, setPayday] = useState(25)
   const router = useRouter()
   const sankeyRef = useRef<SVGSVGElement | null>(null)
 
-  // Make fetchCategoryTotals stable using useCallback
   const fetchCategoryTotals = useCallback(async (userId: string) => {
     if (!userId) return
 
@@ -45,16 +44,13 @@ export default function Dashboard({ user, setUser, selectedAccount, setSelectedA
     else setCategoryTotals(data || [])
 
     console.log('Fetched category totals:', data)
-  }, [payday]) // depends on payday
+  }, [payday])
 
-  // useEffect runs whenever selectedAccount changes
   useEffect(() => {
     if (!selectedAccount) return
-
     fetchCategoryTotals(selectedAccount)
   }, [selectedAccount, fetchCategoryTotals])
 
-  // --- Sankey chart ---
   useEffect(() => {
     if (!sankeyRef.current) return
 
@@ -109,13 +105,17 @@ export default function Dashboard({ user, setUser, selectedAccount, setSelectedA
       links: JSON.parse(JSON.stringify(links))
     })
 
-    svg
-      .attr('viewBox', `0 0 ${layoutWidth + margin.left + margin.right} ${layoutHeight + margin.top + margin.bottom}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet')
-      .style('width', '100%')
-      .style('height', 'auto')
+svg
+  // viewBox starts at 0,0 so no extra left space
+  .attr('viewBox', `0 0 ${layoutWidth + margin.right} ${layoutHeight + margin.top + margin.bottom}`)
+  .attr('preserveAspectRatio', 'xMinYMin meet') // aligns to top-left, not center
+  .style('width', '100%')
+  .style('height', 'auto')
+  svg.style('background', 'transparent');
 
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`)
+// Move <g> down only for top margin, remove left margin translation
+const g = svg.append('g')
+  .attr('transform', `translate(0, ${margin.top})`) // remove margin.left
 
     // Links
     g.append('g')
@@ -162,21 +162,47 @@ export default function Dashboard({ user, setUser, selectedAccount, setSelectedA
       .attr('y', d => ((d.y1 || 0) + (d.y0 || 0)) / 2)
       .attr('alignment-baseline', 'middle')
       .text(d => d.name)
-      .attr('fill', '#000')
+      .attr('fill', '#ffffff')
       .style('font-size', '12px')
   }, [categoryTotals])
 
   return (
-    <Page title="Dashboard" user={user} setUser={setUser} selectedAccount={selectedAccount} setSelectedAccount={setSelectedAccount} >
-      <div className="min-h-screen bg-gray-100 p-4">
-        <div className="max-w-4xl mx-auto">
+    <Page title="Dashboard" user={user} setUser={setUser} selectedAccount={selectedAccount} setSelectedAccount={setSelectedAccount}>
+      <div className="min-h-screen bg-gray-100 p-4 test">
+       <div className="max-w-4xl bg-gray-100 mx-auto h-screen test"> {/* full viewport height */}
           {/* Sankey Chart */}
-          <div className="bg-white p-6 rounded shadow mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Transactions Sankey</h2>
-            <svg ref={sankeyRef} width={600} height={300}></svg>
+          <div className="sankey-container h-full flex flex-col"> {/* full height and flex for heading + chart */}
+            <h2 className="text-xl font-semibold text-white mb-4 flex-none">Transactions Sankey</h2>
+            <svg ref={sankeyRef} className="flex-1 w-full"></svg> {/* takes remaining height */}
           </div>
         </div>
       </div>
+
+      {/* Responsive Sankey CSS */}
+      <style jsx>{`
+      .test{
+      background-color: #f9f9fb00 !important;}
+        .sankey-container {
+          width: 100%;
+          overflow-x: auto;
+          height: 100%;
+          overflow: hidden; /* TURN OFF ALL SCROLLING */
+        }
+
+        .sankey-container svg {
+          width: 100%;
+          height: auto;
+          transform-origin: top left;
+          transform: scale(1);
+        }
+
+        @media (max-width: 640px) {
+          .sankey-container svg {
+            transform: scale(1.1); /* zoom 1.5x on mobile */
+          }
+          
+        }
+      `}</style>
     </Page>
   )
 }

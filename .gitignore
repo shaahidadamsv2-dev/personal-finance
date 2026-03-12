@@ -9,3 +9,8 @@ node_modules
 **/public/sw**
 
 .env.local
+/app
+*.keystore
+/build/*
+/gradle/*
+.gradle/*
