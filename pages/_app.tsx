@@ -1,5 +1,6 @@
 import type { AppProps } from 'next/app'
 import { ThemeProvider } from 'next-themes'
+import { SettingsProvider } from '../context/SettingsContext';
 import '@/styles/globals.css'
 
 import { useState, useEffect } from 'react'
@@ -18,6 +19,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
 	
 	return (
+		<SettingsProvider>
 		<ThemeProvider
 			attribute='class'
 			defaultTheme='system'
@@ -25,5 +27,6 @@ export default function App({ Component, pageProps }: AppProps) {
 		>
 			<Component {...pageProps} user={user} setUser={setUser} selectedAccount={selectedAccount} setSelectedAccount={setSelectedAccount} />
 		</ThemeProvider>
+		</SettingsProvider>
 	)
 }

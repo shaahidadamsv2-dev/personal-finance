@@ -14,37 +14,13 @@ interface AppbarProps {
   setUser: (user: any) => void
   selectedAccount?: string | null
   setSelectedAccount: (account: string | null) => void
+  sharedAccounts: string[]
+  setSharedAccounts: (accounts: string[]) => void
 }
 
-const Appbar = ({ user, setUser, selectedAccount, setSelectedAccount }: AppbarProps) => {
+const Appbar = ({ user, setUser, selectedAccount, setSelectedAccount, sharedAccounts, setSharedAccounts }: AppbarProps) => {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [sharedAccounts, setSharedAccounts] = useState<string[]>([])
-  
-
-  useEffect(() => {
-    if (!user?.id) return
-
-    const fetchSharedAccounts = async () => {
-      const { data, error } = await supabase
-        .from("transaction_permissions")
-        .select("owner_id")
-        .eq("viewer_id", user.id)
-
-      if (error) {
-        console.error(error)
-        return
-      }
-
-      const ids = data.map((row: any) => row.owner_id)
-      setSharedAccounts(ids)
-
-      // default selected account to self
-      setSelectedAccount(user.id)
-    }
-
-    fetchSharedAccounts()
-  }, [])
 
   return (
     <div className='fixed top-0 left-0 z-20 w-full bg-zinc-900 pt-safe'>

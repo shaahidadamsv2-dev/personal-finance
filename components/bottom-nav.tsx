@@ -71,7 +71,7 @@ const links = [
 	},
 	{
 		label: 'Settings',
-		href: '/user',
+		href: '/settings',
 		icon: (
 			<svg
 				viewBox='0 0 15 15'

@@ -255,7 +255,7 @@ useEffect(() => {
 
 }, [])
   return (
-    <Page title="Dashboard" user={user} setUser={setUser} selectedAccount={selectedAccount} setSelectedAccount={setSelectedAccount}>
+    <Page title="Dashboard" user={user} setUser={setUser} selectedAccount={selectedAccount} setSelectedAccount={setSelectedAccount} >
       <div className="bg-gray-100 p-4 test">
        <div className="max-w-4xl bg-gray-100 mx-auto  test"> {/* full viewport height */}
           {/* Sankey Chart */}

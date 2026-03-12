@@ -20,12 +20,12 @@
     "path": "C:\\Users\\shaah\\Code\\personal-finance\\android.keystore",
     "alias": "android"
   },
-  "appVersionName": "1",
-  "appVersionCode": 1,
+  "appVersionName": "3",
+  "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://personal-finance-netrunner.netlify.app/manifest.json",
-  "fallbackType": "customtabs",
+  "fallbackType": "none",
   "features": {},
   "alphaDependencies": {
     "enabled": false
@@ -37,11 +37,15 @@
   "minSdkVersion": 21,
   "orientation": "portrait",
   "fingerprints": [],
-  "additionalTrustedOrigins": [],
+  "additionalTrustedOrigins": [
+    "https://personal-finance-netrunner.netlify.app"
+  ],
   "retainedBundles": [],
   "protocolHandlers": [],
   "fileHandlers": [],
   "launchHandlerClientMode": "",
-  "displayOverride": [],
-  "appVersion": "1"
+  "displayOverride": [
+    "standalone"
+  ],
+  "appVersion": "3"
 }
