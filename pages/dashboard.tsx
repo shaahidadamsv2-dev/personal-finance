@@ -20,10 +20,13 @@ export default function Dashboard() {
   const { memoUser, setUser, selectedAccount, setSelectedAccount, sharedAccounts } = useUser()
   const {settings, updateSettings} = useSettings()
   const [categoryTotals, setCategoryTotals] = useState<CategoryTotal[]>([])
+  const [last12Months, setLast12Months] = useState<any[]>([])
   
   const router = useRouter()
   const sankeyRef = useRef<SVGSVGElement | null>(null)
+  const lineChartRef = useRef<SVGSVGElement | null>(null)
 
+  // Fetch current month totals for Sankey
   const fetchCategoryTotals = useCallback(async (userId: string) => {
     if (!userId) return
 
@@ -42,14 +45,29 @@ export default function Dashboard() {
     else setCategoryTotals(data || [])
   }, [settings.payday])
 
+  // Fetch last 12 months totals for Line Chart
+  const fetchLast12Months = useCallback(async () => {
+    if (!selectedAccount) return
+
+    const { data, error } = await supabase.rpc('get_category_totals_last_months', {
+      p_user_id: selectedAccount,
+      p_months_back: 12
+    })
+
+    if (error) console.error(error)
+    else setLast12Months(data || [])
+   console.log('Last 12 months data:', data)
+  }, [selectedAccount])
+
   useEffect(() => {
     if (!selectedAccount) return
     fetchCategoryTotals(selectedAccount)
-  }, [selectedAccount, fetchCategoryTotals])
+    fetchLast12Months()
+  }, [selectedAccount, fetchCategoryTotals, fetchLast12Months])
 
+  // Sankey chart
   useEffect(() => {
     if (!sankeyRef.current) return
-
     const svg = d3.select(sankeyRef.current)
     svg.selectAll('*').remove()
 
@@ -63,7 +81,6 @@ export default function Dashboard() {
     const pension = 582
     const netIncome = grossIncome - tax - uif - pension
 
-    // Split categoryTotals
     const expenseSums: Record<string, number> = {}
     const incomeSums: Record<string, number> = {}
     categoryTotals.forEach(c => {
@@ -81,19 +98,17 @@ export default function Dashboard() {
       .domain([...expenseCategories, ...incomeCategories])
       .range(d3.schemeTableau10)
 
-    // Nodes
     const nodes = [
-      { name: 'Gross [Gross Income]' },       // 0
-      { name: `Tax [${tax}]` },               // 1
-      { name: `UIF [${uif}]` },               // 2
-      { name: `Pension [${pension}]` },       // 3
-      { name: `Net [${netIncome}]` },         // 4
-      ...incomeCategories.map(c => ({ name: `${c} [${incomeSums[c]}]` })),  // 5..n
-      ...expenseCategories.map(c => ({ name: `${c} [${expenseSums[c]}]` })), // last-1
-      { name: `Remaining [${remaining}]` }   // last
+      { name: 'Gross [Gross Income]' },       
+      { name: `Tax [${tax}]` },               
+      { name: `UIF [${uif}]` },               
+      { name: `Pension [${pension}]` },       
+      { name: `Net [${netIncome}]` },         
+      ...incomeCategories.map(c => ({ name: `${c} [${incomeSums[c]}]` })),  
+      ...expenseCategories.map(c => ({ name: `${c} [${expenseSums[c]}]` })), 
+      { name: `Remaining [${remaining}]` }   
     ]
 
-    // Indices
     const grossIndex = 0
     const taxIndex = 1
     const uifIndex = 2
@@ -104,24 +119,13 @@ export default function Dashboard() {
     const remainingIndex = nodes.length - 1
 
     const links = []
-
-    // Gross → Deductions
     links.push({ source: grossIndex, target: taxIndex, value: tax })
     links.push({ source: grossIndex, target: uifIndex, value: uif })
     links.push({ source: grossIndex, target: pensionIndex, value: pension })
     links.push({ source: grossIndex, target: netIndex, value: netIncome })
 
-    // Income categories → Net
-    incomeCategories.forEach((c,i)=>{
-      links.push({ source: incomeStartIndex + i, target: netIndex, value: incomeSums[c] })
-    })
-
-    // Net → Expenses
-    expenseCategories.forEach((c,i)=>{
-      links.push({ source: netIndex, target: expenseStartIndex + i, value: expenseSums[c] })
-    })
-
-    // Net → Remaining
+    incomeCategories.forEach((c,i)=>{ links.push({ source: incomeStartIndex+i, target: netIndex, value: incomeSums[c] }) })
+    expenseCategories.forEach((c,i)=>{ links.push({ source: netIndex, target: expenseStartIndex+i, value: expenseSums[c] }) })
     links.push({ source: netIndex, target: remainingIndex, value: remaining })
 
     interface SankeyNode { name: string; x0?: number; x1?: number; y0?: number; y1?: number }
@@ -146,7 +150,6 @@ export default function Dashboard() {
 
     const g = svg.append('g').attr('transform', `translate(0, ${margin.top})`)
 
-    // Links
     g.append('g')
       .selectAll('path')
       .data(sankeyLinks)
@@ -166,7 +169,6 @@ export default function Dashboard() {
       .attr('fill','none')
       .attr('opacity',0.5)
 
-    // Nodes
     g.append('g')
       .selectAll('rect')
       .data(sankeyNodes)
@@ -187,7 +189,6 @@ export default function Dashboard() {
         return categoryColor(categoryName)
       })
 
-    // Node labels
     g.append('g')
       .selectAll('text')
       .data(sankeyNodes)
@@ -201,32 +202,126 @@ export default function Dashboard() {
 
   }, [categoryTotals])
 
-  const lineChartRef = useRef<SVGSVGElement | null>(null)
-  useEffect(() => {
-    if (!lineChartRef.current) return
-    const svg = d3.select(lineChartRef.current)
-    svg.selectAll('*').remove()
+  // Line chart for last 12 months, dynamic categories
+// Dummy line chart just to confirm rendering
+useEffect(() => {
+  if (!lineChartRef.current || last12Months.length === 0) return;
 
-    const width = 600
-    const height = 220
-    const margin = { top: 20, right: 20, bottom: 30, left: 40 }
-    const months = ['Oct','Nov','Dec','Jan','Feb','Mar']
-    const dataset = [
-      { name: "Food", values: [1200,1500,900,1800,1700,2000] },
-      { name: "Transport", values: [600,800,700,900,850,1000] },
-      { name: "Entertainment", values: [400,500,450,600,650,700] }
-    ]
-    const x = d3.scalePoint().domain(months).range([margin.left, width - margin.right])
-    const y = d3.scaleLinear().domain([0, d3.max(dataset.flatMap(d => d.values))!]).nice().range([height - margin.bottom, margin.top])
-    const color = d3.scaleOrdinal<string>().domain(dataset.map(d => d.name)).range(["#6366f1","#22c55e","#f59e0b"])
-    const line = d3.line<number>().x((d,i) => x(months[i])!).y(d => y(d)).curve(d3.curveMonotoneX)
-    const area = d3.area<number>().x((d,i) => x(months[i])!).y0(height-margin.bottom).y1(d=>y(d)).curve(d3.curveMonotoneX)
-    dataset.forEach(series=>{svg.append("path").datum(series.values).attr("fill",color(series.name) as string).attr("opacity",0.2).attr("d",area)})
-    dataset.forEach(series=>{svg.append("path").datum(series.values).attr("fill","none").attr("stroke",color(series.name) as string).attr("stroke-width",2).attr("d",line)})
-    svg.append("g").attr("transform",`translate(0,${height-margin.bottom})`).call(d3.axisBottom(x))
-    svg.append("g").attr("transform",`translate(${margin.left},0)`).call(d3.axisLeft(y))
-    svg.attr("viewBox",`0 0 ${width} ${height}`).style("width","100%").style("height","auto")
-  }, [])
+  const svg = d3.select(lineChartRef.current);
+  svg.selectAll('*').remove();
+
+  const width = 600;
+  const height = 220;
+  const margin = { top: 20, right: 140, bottom: 30, left: 40 }; // increase right margin for legend
+  const legendWidth = 120; // space reserved for legend
+
+  // 1. Generate last 12 months
+  const monthDates = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (11 - i));
+    d.setDate(1);
+    return d;
+  });
+
+  const monthNames = monthDates.map(d =>
+    d.toLocaleString('default', { month: 'short', year: '2-digit' })
+  );
+
+  // 2. Get all categories
+  const categories = Array.from(new Set(last12Months.map(d => d.category)));
+
+  // 3. Build dataset with missing months filled
+  const dataset = categories.map(cat => {
+    const values = monthDates.map(d => {
+      const monthData = last12Months.filter(
+        item =>
+          item.category === cat &&
+          new Date(item.month_start).getFullYear() === d.getFullYear() &&
+          new Date(item.month_start).getMonth() === d.getMonth()
+      );
+      return monthData.reduce((sum, item) => sum + Number(item.total), 0);
+    });
+    return { name: cat, values };
+  });
+
+  // Adjust x-scale so chart doesn't go into legend space
+  const x = d3
+    .scalePoint()
+    .domain(monthNames)
+    .range([margin.left, width - margin.right - legendWidth]);
+
+  const y = d3
+    .scaleLinear()
+    .domain([0, d3.max(dataset.flatMap(d => d.values))!])
+    .nice()
+    .range([height - margin.bottom, margin.top]);
+
+  const color = d3.scaleOrdinal<string>().domain(categories).range(d3.schemeTableau10);
+
+  const line = d3
+    .line<number>()
+    .x((d, i) => x(monthNames[i])!)
+    .y(d => y(d))
+    .curve(d3.curveMonotoneX);
+
+  // Draw lines
+  dataset.forEach(series => {
+    svg
+      .append('path')
+      .datum(series.values)
+      .attr('fill', 'none')
+      .attr('stroke', color(series.name)!)
+      .attr('stroke-width', 2)
+      .attr('d', line);
+  });
+
+  // X axis
+  svg
+    .append('g')
+    .attr('transform', `translate(0,${height - margin.bottom})`)
+    .call(d3.axisBottom(x));
+
+  // Y axis
+  svg
+    .append('g')
+    .attr('transform', `translate(${margin.left},0)`)
+    .call(d3.axisLeft(y));
+
+  // Legend outside chart
+  const legend = svg
+    .append('g')
+    .attr('class', 'legend')
+    .attr('transform', `translate(${width - margin.right + 10}, ${margin.top})`);
+
+  dataset.forEach((series, i) => {
+    const legendRow = legend.append('g').attr('transform', `translate(0, ${i * 20})`);
+
+    // Colored square
+    legendRow
+      .append('rect')
+      .attr('width', 12)
+      .attr('height', 12)
+      .attr('fill', color(series.name)!);
+
+    // Text label
+    legendRow
+      .append('text')
+      .attr('x', 16)
+      .attr('y', 12)
+      .attr('fill', '#ffffff') // dark text for contrast
+      .style('font-size', '12px')
+      .style('font-family', 'sans-serif')
+      .text(series.name);
+  });
+
+  svg
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .style('width', '100%')
+    .style('height', 'auto');
+
+  console.log('Processed dataset:', dataset);
+  console.log('Last 12 months:', monthNames);
+}, [last12Months]);
 
   return (
     <Page title="Dashboard">
@@ -239,17 +334,19 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <div className="linechart-container mt-8">
+        <h2 className="text-xl font-semibold text-white mb-4">Transactions Last 12 Months</h2>
+        <svg ref={lineChartRef}></svg>
+      </div>
+
       <style jsx>{`
         .test{ background-color: #f9f9fb00 !important; height: auto; }
         .sankey-container { width: 100%; overflow-x: auto; margin-left: 0px; overflow: hidden; }
         .sankey-container svg { width: 100%; transform-origin: top left; transform: scale(1); }
-        @media (max-width: 640px) { .sankey-container svg { margin-bottom: 60px; transform: scale(1.05); } }
-      `}</style>
+        .linechart-container svg {transform: scale(0.9)}
 
-      <div className="linechart-container mt-8">
-        <h2 className="text-xl font-semibold text-white mb-4">Dummy Line Chart</h2>
-        <svg ref={lineChartRef}></svg>
-      </div>
+        @media (max-width: 640px) { .sankey-container svg { margin-bottom: 60px; transform: scale(1.06); } }
+      `}</style>
     </Page>
   )
 }
