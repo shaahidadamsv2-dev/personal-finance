@@ -161,6 +161,15 @@ export default function SankeyChart({ categoryTotals, settings }: SankeyChartPro
       .attr('fill','#ffffff')
       .style('font-size','12px')
 
+       const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 3]) // min/max zoom
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform.toString())
+      })
+
+    svg.call(zoom)
+
+
   }, [categoryTotals, settings])
 
   return <div>
