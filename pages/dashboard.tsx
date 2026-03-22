@@ -275,7 +275,7 @@ useEffect(() => {
         .sankey-container {
           width: 100%;
           overflow-x: auto;
-         
+          margin-left: 0px;
           overflow: hidden; /* TURN OFF ALL SCROLLING */
           
         }
@@ -290,7 +290,7 @@ useEffect(() => {
         @media (max-width: 640px) {
           .sankey-container svg {
           margin-bottom: 60px;
-            transform: scale(1.1); /* zoom 1.5x on mobile */
+            transform: scale(1.05); /* zoom 1.05x on mobile */
           }
           
         }

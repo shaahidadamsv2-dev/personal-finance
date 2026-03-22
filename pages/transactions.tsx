@@ -12,6 +12,7 @@ interface Transaction {
   category: string
   description?: string
   transaction_date: string
+  transaction_type: string
 }
 
 const Transactions = () => {
@@ -71,6 +72,7 @@ const Transactions = () => {
           amount: parsedAmount,
           category: sanitizedCategory,
           description: sanitizedDescription || null,
+          transaction_type: 'expense'
         },
       ])
       if (error) throw error
@@ -149,7 +151,7 @@ const Transactions = () => {
       <div className="bg-white p-6 rounded shadow mb-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Add Transaction</h2>
         <form
-          onSubmit={addTransaction}
+          
           className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end"
         >
           <input
@@ -177,9 +179,18 @@ const Transactions = () => {
           />
           <button
             type="submit"
+            onClick={addTransaction}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition col-span-full sm:col-auto"
           >
-            Add
+            Add Expense
+          </button>
+          
+          <button
+            type="submit"
+            onClick={()=> alert("Functionality Loading!")}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition col-span-full sm:col-auto"
+          >
+            Add Income
           </button>
         </form>
       </div>
@@ -197,8 +208,9 @@ const Transactions = () => {
                 className="border p-4 rounded flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-gray-50"
               >
                 <div className="text-gray-900">
-                  <strong>{t.category}</strong>: ${t.amount.toFixed(2)}
+                  {`${t.transaction_type} `}<strong>{t.category}</strong>: ${t.amount.toFixed(2)}
                   {t.description && ` — ${t.description}`}
+                  
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
                   <input
